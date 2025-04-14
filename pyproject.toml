@@ -1,0 +1,13 @@
+[project]
+name = "mcp-midi-server"
+version = "0.1.0"
+description = "MIDI送信機能を提供するMCPサーバー"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.6.0",
+]
+
+[tool.setuptools]
+py-modules = ["midisend"]
