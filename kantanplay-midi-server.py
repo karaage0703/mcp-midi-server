@@ -1,4 +1,4 @@
-# midisend.py
+# kantanplay.py
 from mcp.server.fastmcp import FastMCP
 import sys
 import os
@@ -7,7 +7,7 @@ import shutil
 import time
 
 # Create an MCP server
-mcp = FastMCP("midisend")
+mcp = FastMCP("kantanplay")
 
 # rtmidiのインストールを試みる
 try:
@@ -199,6 +199,58 @@ def send_midi_cc(controller: int, value: int) -> str:
         # MIDIメッセージを送信
         midi_out.send_message(midi_message)
         return f"MIDI CC {controller}={value} をチャンネル1で送信しました"
+    except Exception as e:
+        return f"MIDI送信エラー: {str(e)}"
+
+@mcp.tool()
+def send_midi_sequence(bpm: int, notes: list) -> str:
+    """
+    指定されたBPMで複数のMIDIノートを順番に送信します
+    
+    Args:
+        bpm: テンポ（1分間あたりの拍数）
+        notes: 送信するMIDIノート番号のリスト (各ノートは0-127の範囲)
+    
+    Returns:
+        送信結果のメッセージ
+    """
+    if not rtmidi_available:
+        return "rtmidiライブラリがインストールされていないため、MIDI機能は利用できません。"
+    
+    if not midi_port_opened:
+        return "MIDIポートが開かれていません。まずopen_midi_port()を使用してポートを選択してください。"
+    
+    # BPMの妥当性チェック
+    if bpm <= 0:
+        return f"エラー: BPMは正の値である必要があります。入力値: {bpm}"
+    
+    # 1ステップの時間を計算（秒）
+    # 1分（60秒）をBPMで割り、それをさらに2で割る（オンとオフで等分）
+    step_time = 60.0 / bpm / 2
+    
+    try:
+        sent_notes = []
+        
+        for note in notes:
+            if not 0 <= note <= 127:
+                return f"エラー: ノート番号は0から127の間である必要があります。入力値: {note}"
+                
+            # Note Onメッセージを送信（チャンネル1、ベロシティ100）
+            midi_on_message = [0x90, note, 100]
+            midi_out.send_message(midi_on_message)
+            sent_notes.append(note)
+            
+            # 1ステップ分待機
+            time.sleep(step_time)
+            
+            # Note Offメッセージを送信
+            midi_off_message = [0x90, note, 0]
+            midi_out.send_message(midi_off_message)
+            
+            # 1ステップ分待機（次のノートまでの間隔）
+            time.sleep(step_time)
+        
+        return f"BPM {bpm}で以下のMIDIノートシーケンスを送信しました: {sent_notes}"
     except Exception as e:
         return f"MIDI送信エラー: {str(e)}"
 

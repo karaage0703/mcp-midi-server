@@ -1,19 +1,19 @@
-# MCP MIDI サーバー
+# KantanPlay MIDI サーバー
 
-このプロジェクトは、MCPフレームワークを使用してMIDI送信機能を提供するサーバーです。
+このプロジェクトは、MCP フレームワークを使用して MIDI 送信機能を提供するサーバーです。
 
 ## 機能
 
-- 利用可能なMIDIポートの一覧表示
-- MIDIポートの選択と接続
-- MIDIノートの送信（チャンネル1）
-- MIDI CCメッセージの送信（チャンネル1）
+- 利用可能な MIDI ポートの一覧表示
+- MIDI ポートの選択と接続
+- MIDI ノートの送信（チャンネル 1）
+- MIDI CC メッセージの送信（チャンネル 1）
 
 ## 必要条件
 
-- Python 3.12以上
+- Python 3.12 以上
 - python-rtmidi 1.5.8
-- mcp[cli] 1.6.0以上
+- mcp[cli] 1.6.0 以上
 
 ## インストール
 
@@ -31,11 +31,11 @@ python midisend.py
 
 ## 使用例
 
-1. `list_midi_ports()` - 利用可能なMIDIポートの一覧を表示
-2. `open_midi_port(port_index)` - 指定したインデックスのMIDIポートを開く
-3. `send_midi_note(note_number)` - MIDIノートを送信（0-127）
-4. `send_midi_cc(controller, value)` - MIDI CCメッセージを送信（コントローラー: 0-127, 値: 0-127）
+1. `list_midi_ports()` - 利用可能な MIDI ポートの一覧を表示
+2. `open_midi_port(port_index)` - 指定したインデックスの MIDI ポートを開く
+3. `send_midi_note(note_number)` - MIDI ノートを送信（0-127）
+4. `send_midi_cc(controller, value)` - MIDI CC メッセージを送信（コントローラー: 0-127, 値: 0-127）
 
 ## ライセンス
 
-MITライセンス
+MIT ライセンス
