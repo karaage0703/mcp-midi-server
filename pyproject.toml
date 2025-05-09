@@ -1,5 +1,5 @@
 [project]
-name = "mcp-midi-server"
+name = "kantanplay-midi-server"
 version = "0.1.0"
 description = "MIDI送信機能を提供するMCPサーバー"
 readme = "README.md"
