@@ -39,22 +39,4 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Node.js/TypeScript関連
-node_modules/
-package-lock.json
-package.json
-tsconfig.json
-*.tsbuildinfo
-
-# MIDIサーバー関連
-midi.d.ts
-
-# ログ・一時ファイル
-*.log
-*.tmp
-*.bak
-
-# その他
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+prompt.txt

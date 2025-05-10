@@ -1,3 +1,4 @@
+
 # kantanplay.py
 from mcp.server.fastmcp import FastMCP
 import sys

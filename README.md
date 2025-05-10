@@ -1,6 +1,6 @@
 # KantanPlay MIDI サーバー
 
-このプロジェクトは、MCP フレームワークを使用して MIDI 送信機能を提供するサーバーです。Python版とTypeScript版の両方を提供しています。
+このプロジェクトは、MCP フレームワークを使用して MIDI 送信機能を提供するサーバーです。Python版のみを提供しています。
 
 ## 機能
 
@@ -32,26 +32,6 @@ pip install -r requirements.txt
 python kantanplay-midi-server.py
 ```
 
-## TypeScript版
-
-### TypeScript版の必要条件
-
-- Node.js 18.0.0 以上
-- npm 8.0.0 以上
-
-### TypeScript版のインストール
-
-```bash
-# 依存関係のインストール
-npm install
-```
-
-### TypeScript版の使用方法
-
-```bash
-# TypeScriptをトランスパイルして実行
-npx ts-node src/kantanplay-midi-server.ts
-```
 
 ## 使用例
 
