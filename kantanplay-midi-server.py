@@ -76,7 +76,6 @@ if rtmidi_available:
 
 @mcp.tool()
 def open_midi_port(port_index: int) -> str:
-    global midi_out
     """
     指定されたインデックスのMIDIポートを開きます
     
@@ -102,44 +101,14 @@ def open_midi_port(port_index: int) -> str:
         if midi_port_opened:
             midi_out.close_port()
         
-        port_name = available_ports[port_index]
-        is_ble = any(x in port_name.lower() for x in ["ble", "bluetooth"])
+        # 指定されたポートを開く
+        midi_out.open_port(port_index)
+        selected_port_index = port_index
+        midi_port_opened = True
         
-        try_count = 2 if is_ble else 1
-        last_error = None
-        for attempt in range(try_count):
-            try:
-                if is_ble and attempt > 0:
-                    # BLEの場合はopen失敗時にmidi_out再生成＋1秒待機してリトライ
-                    import rtmidi
-
-                    midi_out = rtmidi.MidiOut()
-                    midi_out.open_port(port_index)
-                else:
-                    midi_out.open_port(port_index)
-                selected_port_index = port_index
-                midi_port_opened = True
-                return f"MIDIポートを開きました: {port_name}"
-            except Exception as e:
-                last_error = e
-                import platform
-                print(f"[デバッグ] MIDIポートopen失敗: {port_name} ({'BLE' if is_ble else '通常'})", file=sys.stderr)
-                print(f"[デバッグ] エラー内容: {str(e)}", file=sys.stderr)
-                print(f"[デバッグ] OS: {platform.platform()}", file=sys.stderr)
-                if is_ble and attempt == 0:
-                    print("[デバッグ] BLE MIDIポートopen失敗。1秒待機して再試行します...", file=sys.stderr)
-                    time.sleep(1)
-        # すべて失敗
-        if is_ble:
-            return (f"BLE MIDIポート({port_name})を開けませんでした: {str(last_error)}\n"
-                    f"・Bluetooth MIDIユーティリティでデバイスが接続済みか確認してください。\n"
-                    f"・macOSの場合はMIDIスタジオのBluetooth設定も確認してください。\n"
-                    f"・それでも開けない場合は一度デバイスを切断→再接続してください。\n"
-                    f"・詳細はサーバーの標準エラー出力のデバッグログを参照してください。")
-        else:
-            return f"MIDIポートを開く際にエラーが発生しました: {str(last_error)}"
+        return f"MIDIポートを開きました: {available_ports[port_index]}"
     except Exception as e:
-        return f"MIDIポートを開く際に予期せぬエラーが発生しました: {str(e)}"
+        return f"MIDIポートを開く際にエラーが発生しました: {str(e)}"
 
 @mcp.tool()
 def list_midi_ports() -> str:
