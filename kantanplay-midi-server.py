@@ -238,33 +238,54 @@ def send_midi_sequence(bpm: int, notes: list) -> str:
     if bpm <= 0:
         return f"エラー: BPMは正の値である必要があります。入力値: {bpm}"
 
-    # 1ステップの時間を計算（秒）
-    # 1分（60秒）をBPMで割り、それをさらに2で割る（オンとオフで等分）
-    step_time = 60.0 / bpm / 2
+    # BPMから基本タイミングを計算し、安全な最小値を設定
+    beat_duration = 60.0 / bpm  # 1拍の長さ（秒）
+    note_duration = beat_duration * 0.5  # ノートの長さ（拍の50%）
+    note_gap = beat_duration * 0.25  # ノート間のギャップ（拍の25%）
+    pre_delay = beat_duration * 0.25  # ノート前の遅延（拍の25%）
+
+    # ハードウェア安全性のため最小値を1秒に設定
+    SAFE_DELAY = 1.0
+    note_duration = max(note_duration, SAFE_DELAY)
+    note_gap = max(note_gap, SAFE_DELAY)
+    pre_delay = max(pre_delay, SAFE_DELAY)
 
     try:
         sent_notes = []
+        print(
+            f"DEBUG: BPM {bpm}での安全なシーケンス開始 (前遅延:{pre_delay:.1f}s, ノート長:{note_duration:.1f}s, 間隔:{note_gap:.1f}s)",
+            file=sys.stderr,
+        )
 
         for note in notes:
             if not 0 <= note <= 127:
                 return f"エラー: ノート番号は0から127の間である必要があります。入力値: {note}"
 
-            # Note Onメッセージを送信（チャンネル1、ベロシティ100）
-            midi_on_message = [0x90, note, 100]
-            midi_out.send_message(midi_on_message)
+            print(f"DEBUG: ノート{note}開始", file=sys.stderr)
+
+            # ノート前の遅延
+            time.sleep(pre_delay)
+
+            # Note On (聞こえるベロシティ)
+            midi_on = [0x90, note, 64]
+            midi_out.send_message(midi_on)
+            print(f"DEBUG: ノート{note} ON", file=sys.stderr)
             sent_notes.append(note)
 
-            # 1ステップ分待機
-            time.sleep(step_time)
+            # ノートの長さ分待機
+            time.sleep(note_duration)
 
-            # Note Offメッセージを送信
-            midi_off_message = [0x90, note, 0]
-            midi_out.send_message(midi_off_message)
+            # Note Off
+            midi_off = [0x90, note, 0]
+            midi_out.send_message(midi_off)
+            print(f"DEBUG: ノート{note} OFF", file=sys.stderr)
 
-            # 1ステップ分待機（次のノートまでの間隔）
-            time.sleep(step_time)
+            # 次のノートまでの間隔
+            time.sleep(note_gap)
 
-        return f"BPM {bpm}で以下のMIDIノートシーケンスを送信しました: {sent_notes}"
+            print(f"DEBUG: ノート{note}完了", file=sys.stderr)
+
+        return f"シンプル実装で送信完了: {sent_notes}"
     except Exception as e:
         return f"MIDI送信エラー: {str(e)}"
 
