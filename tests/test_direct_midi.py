@@ -1,19 +1,84 @@
-#!/usr/bin/env python3
 """
 MCPサーバーを使わずに直接MIDI信号を連続送信するテスト
-遅延なしでの動作を確認
+Mac (mido) と Jetson (raw MIDI) の両方に対応
 """
 
-import mido
 import time
+import platform
+import os
+
+
+class UniversalMIDI:
+    def __init__(self):
+        self.is_jetson = self._detect_jetson()
+        self.midi_device = None
+
+    def _detect_jetson(self):
+        """Jetson環境かどうかを判定"""
+        return platform.machine().startswith("aarch64") and os.path.exists("/dev/snd/midiC0D0")
+
+    def get_output_names(self):
+        """利用可能なMIDI出力ポート名を取得"""
+        if self.is_jetson:
+            if os.path.exists("/dev/snd/midiC0D0"):
+                return ["/dev/snd/midiC0D0 (UM-1)"]
+            else:
+                return []
+        else:
+            import mido
+
+            return mido.get_output_names()
+
+    def open_output(self, port_name):
+        """MIDI出力ポートを開く"""
+        if self.is_jetson:
+            self.midi_device = open("/dev/snd/midiC0D0", "wb")
+            return self
+        else:
+            import mido
+
+            self.midi_device = mido.open_output(port_name)
+            return self.midi_device
+
+    def send_message(self, msg_type, channel=0, note=None, velocity=None):
+        """MIDIメッセージを送信"""
+        if self.is_jetson:
+            if msg_type == "note_on":
+                midi_bytes = bytes([0x90 + channel, note, velocity])
+            elif msg_type == "note_off":
+                midi_bytes = bytes([0x80 + channel, note, velocity])
+            else:
+                return
+
+            self.midi_device.write(midi_bytes)
+            self.midi_device.flush()
+        else:
+            import mido
+
+            msg = mido.Message(msg_type, channel=channel, note=note, velocity=velocity)
+            self.midi_device.send(msg)
+
+    def close(self):
+        """ポートを閉じる"""
+        if self.midi_device:
+            self.midi_device.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 def test_direct_midi_rapid_fire():
     """遅延なしでMIDI信号を連続送信"""
     try:
+        midi = UniversalMIDI()
+
         # 利用可能な出力ポートを確認
-        output_names = mido.get_output_names()
+        output_names = midi.get_output_names()
         print(f"利用可能なMIDI出力ポート: {output_names}")
+        print(f"環境: {'Jetson' if midi.is_jetson else 'Mac/PC'}")
 
         if not output_names:
             print("MIDI出力ポートが見つかりません")
@@ -23,23 +88,27 @@ def test_direct_midi_rapid_fire():
         port_name = output_names[0]
         print(f"使用するポート: {port_name}")
 
-        with mido.open_output(port_name) as outport:
+        with midi.open_output(port_name):
             # テストシーケンス: C4, D4, E4, F4, G4
             notes = [60, 62, 64, 65, 67]
 
             print("\n=== 遅延なし連続送信テスト ===")
             for note in notes:
                 # Note On
-                msg_on = mido.Message("note_on", channel=0, note=note, velocity=64)
-                outport.send(msg_on)
+                if midi.is_jetson:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
+                else:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
                 print(f"Note {note} ON送信")
 
                 # 極短時間待機（ハードウェアの処理時間）
                 time.sleep(0.01)
 
                 # Note Off
-                msg_off = mido.Message("note_off", channel=0, note=note, velocity=0)
-                outport.send(msg_off)
+                if midi.is_jetson:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
+                else:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
                 print(f"Note {note} OFF送信")
 
                 # 次のノートまでの最小間隔
@@ -54,15 +123,18 @@ def test_direct_midi_rapid_fire():
             print(f"ノート長: {note_duration * 1000:.1f}ms, 間隔: {note_gap * 1000:.1f}ms")
 
             for note in notes:
-                msg_on = mido.Message("note_on", channel=0, note=note, velocity=64)
-                outport.send(msg_on)
+                if midi.is_jetson:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
+                else:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
                 print(f"Note {note} ON (高速)")
 
                 time.sleep(note_duration)
 
-                msg_off = mido.Message("note_off", channel=0, note=note, velocity=0)
-                outport.send(msg_off)
-
+                if midi.is_jetson:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
+                else:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
                 time.sleep(note_gap)
 
             print("\n=== 同時和音テスト ===")
@@ -70,16 +142,20 @@ def test_direct_midi_rapid_fire():
 
             # 和音ON
             for note in chord:
-                msg_on = mido.Message("note_on", channel=0, note=note, velocity=64)
-                outport.send(msg_on)
+                if midi.is_jetson:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
+                else:
+                    midi.send_message("note_on", channel=0, note=note, velocity=64)
                 print(f"Chord note {note} ON")
 
             time.sleep(1.0)  # 1秒間和音を鳴らす
 
             # 和音OFF
             for note in chord:
-                msg_off = mido.Message("note_off", channel=0, note=note, velocity=0)
-                outport.send(msg_off)
+                if midi.is_jetson:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
+                else:
+                    midi.send_message("note_off", channel=0, note=note, velocity=0)
                 print(f"Chord note {note} OFF")
 
             print("\nテスト完了")
