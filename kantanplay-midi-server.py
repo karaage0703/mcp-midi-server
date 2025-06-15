@@ -185,7 +185,7 @@ def send_midi_sequence(bpm: int, notes: list) -> str:
 
     Args:
         bpm: テンポ（1分間あたりの拍数）
-        notes: 送信するMIDIノート番号のリスト (各ノートは0-127の範囲)
+        notes: 送信するMIDIノート番号のリスト (0-127の範囲、-1はゴーストノート/休符)
 
     Returns:
         送信結果のメッセージ
@@ -209,25 +209,34 @@ def send_midi_sequence(bpm: int, notes: list) -> str:
         print(f"DEBUG: BPM {bpm}でのシーケンス開始 (ステップ時間:{step_time:.3f}s)", file=sys.stderr)
 
         for note in notes:
-            if not 0 <= note <= 127:
-                return f"エラー: ノート番号は0から127の間である必要があります。入力値: {note}"
+            if note == -1:
+                # ゴーストノート（休符）- 音を出さずに時間だけ進める
+                print(f"DEBUG: ゴーストノート（休符）", file=sys.stderr)
+                sent_notes.append("休符")
+                
+                # 2ステップ分待機（通常のノートと同じ時間）
+                time.sleep(step_time * 2)
+                
+            elif not 0 <= note <= 127:
+                return f"エラー: ノート番号は0から127の間、または-1（ゴーストノート）である必要があります。入力値: {note}"
+            else:
+                # 通常のノート
+                print(f"DEBUG: ノート{note}開始", file=sys.stderr)
 
-            print(f"DEBUG: ノート{note}開始", file=sys.stderr)
+                # Note Onメッセージを送信（チャンネル1、ベロシティ100）
+                msg_on = mido.Message("note_on", channel=0, note=note, velocity=100)
+                midi_out.send(msg_on)
+                sent_notes.append(note)
 
-            # Note Onメッセージを送信（チャンネル1、ベロシティ100）
-            msg_on = mido.Message("note_on", channel=0, note=note, velocity=100)
-            midi_out.send(msg_on)
-            sent_notes.append(note)
+                # 1ステップ分待機
+                time.sleep(step_time)
 
-            # 1ステップ分待機
-            time.sleep(step_time)
+                # Note Offメッセージを送信
+                msg_off = mido.Message("note_off", channel=0, note=note, velocity=0)
+                midi_out.send(msg_off)
 
-            # Note Offメッセージを送信
-            msg_off = mido.Message("note_off", channel=0, note=note, velocity=0)
-            midi_out.send(msg_off)
-
-            # 1ステップ分待機（次のノートまでの間隔）
-            time.sleep(step_time)
+                # 1ステップ分待機（次のノートまでの間隔）
+                time.sleep(step_time)
 
         return f"BPM {bpm}で以下のMIDIノートシーケンスを送信しました: {sent_notes}"
     except Exception as e:
