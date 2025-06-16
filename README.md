@@ -60,6 +60,30 @@ python kantanplay-midi-server.py
 }
 ```
 
+## MIDI デバイスの固定化（Linux/Jetson）
+
+Linux や Jetson 環境で MIDI デバイスのデバイスファイルを固定化するには、udev ルールを使用します。
+
+### セットアップ
+
+1. セットアップスクリプトを実行：
+   ```bash
+   ./setup-midi-udev.sh
+   ```
+
+2. MIDI デバイスを再接続すると、以下のシンボリックリンクが作成されます：
+   - `/dev/midi-xtouch` → Behringer X-TOUCH MINI
+   - `/dev/midi-um1` → EDIROL UM-1
+
+### カスタマイズ
+
+他の MIDI デバイスを追加する場合は、`config/99-midi-devices.rules` を編集してください。
+
+デバイス情報の確認方法：
+```bash
+udevadm info -a -n /dev/snd/midiC*D0 | grep -E 'ATTRS{idVendor}|ATTRS{idProduct}|ATTRS{product}'
+```
+
 ## ライセンス
 
 MIT ライセンス

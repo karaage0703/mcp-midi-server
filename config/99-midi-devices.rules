@@ -1,0 +1,8 @@
+# udev rules for MIDI devices
+# Place this file in /etc/udev/rules.d/
+
+# Behringer X-TOUCH MINI
+SUBSYSTEM=="sound", ACTION=="add", ATTRS{idVendor}=="1397", ATTRS{idProduct}=="00b3", KERNEL=="midiC*D*", SYMLINK+="midi-xtouch"
+
+# EDIROL UM-1
+SUBSYSTEM=="sound", ACTION=="add", ATTRS{idVendor}=="0582", ATTRS{idProduct}=="009d", KERNEL=="midiC*D*", SYMLINK+="midi-um1"

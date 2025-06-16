@@ -15,13 +15,13 @@ class UniversalMIDI:
 
     def _detect_jetson(self):
         """Jetson環境かどうかを判定"""
-        return platform.machine().startswith("aarch64") and os.path.exists("/dev/snd/midiC0D0")
+        return platform.machine().startswith("aarch64") and os.path.exists("/dev/midi-um1")
 
     def get_output_names(self):
         """利用可能なMIDI出力ポート名を取得"""
         if self.is_jetson:
-            if os.path.exists("/dev/snd/midiC0D0"):
-                return ["/dev/snd/midiC0D0 (UM-1)"]
+            if os.path.exists("/dev/midi-um1"):
+                return ["/dev/midi-um1 (UM-1)"]
             else:
                 return []
         else:
@@ -32,7 +32,7 @@ class UniversalMIDI:
     def open_output(self, port_name):
         """MIDI出力ポートを開く"""
         if self.is_jetson:
-            self.midi_device = open("/dev/snd/midiC0D0", "wb")
+            self.midi_device = open("/dev/midi-um1", "wb")
             return self
         else:
             import mido
